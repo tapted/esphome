@@ -1,12 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import switch
-from esphome.const import (
-    CONF_ID,
-    CONF_INVERTED,
-    CONF_ICON,
-    ICON_POWER,
-)
+from esphome.const import ICON_POWER
 from .. import CONF_PIPSOLAR_ID, PIPSOLAR_COMPONENT_SCHEMA, pipsolar_ns
 
 DEPENDENCIES = ["uart"]
@@ -14,6 +9,7 @@ DEPENDENCIES = ["uart"]
 CONF_OUTPUT_SOURCE_PRIORITY_UTILITY = "output_source_priority_utility"
 CONF_OUTPUT_SOURCE_PRIORITY_SOLAR = "output_source_priority_solar"
 CONF_OUTPUT_SOURCE_PRIORITY_BATTERY = "output_source_priority_battery"
+CONF_OUTPUT_SOURCE_PRIORITY_HYBRID = "output_source_priority_hybrid"
 CONF_INPUT_VOLTAGE_RANGE = "input_voltage_range"
 CONF_PV_OK_CONDITION_FOR_PARALLEL = "pv_ok_condition_for_parallel"
 CONF_PV_POWER_BALANCE = "pv_power_balance"
@@ -22,6 +18,7 @@ TYPES = {
     CONF_OUTPUT_SOURCE_PRIORITY_UTILITY: ("POP00", None),
     CONF_OUTPUT_SOURCE_PRIORITY_SOLAR: ("POP01", None),
     CONF_OUTPUT_SOURCE_PRIORITY_BATTERY: ("POP02", None),
+    CONF_OUTPUT_SOURCE_PRIORITY_HYBRID: ("POP03", None),
     CONF_INPUT_VOLTAGE_RANGE: ("PGR01", "PGR00"),
     CONF_PV_OK_CONDITION_FOR_PARALLEL: ("PPVOKC1", "PPVOKC0"),
     CONF_PV_POWER_BALANCE: ("PSPB1", "PSPB0"),
@@ -29,14 +26,8 @@ TYPES = {
 
 PipsolarSwitch = pipsolar_ns.class_("PipsolarSwitch", switch.Switch, cg.Component)
 
-PIPSWITCH_SCHEMA = switch.SWITCH_SCHEMA.extend(
-    {
-        cv.GenerateID(): cv.declare_id(PipsolarSwitch),
-        cv.Optional(CONF_INVERTED): cv.invalid(
-            "Pipsolar switches do not support inverted mode!"
-        ),
-        cv.Optional(CONF_ICON, default=ICON_POWER): switch.icon,
-    }
+PIPSWITCH_SCHEMA = switch.switch_schema(
+    PipsolarSwitch, icon=ICON_POWER, block_inverted=True
 ).extend(cv.COMPONENT_SCHEMA)
 
 CONFIG_SCHEMA = PIPSOLAR_COMPONENT_SCHEMA.extend(
@@ -50,9 +41,8 @@ async def to_code(config):
     for type, (on, off) in TYPES.items():
         if type in config:
             conf = config[type]
-            var = cg.new_Pvariable(conf[CONF_ID])
+            var = await switch.new_switch(conf)
             await cg.register_component(var, conf)
-            await switch.register_switch(var, conf)
             cg.add(getattr(paren, f"set_{type}_switch")(var))
             cg.add(var.set_parent(paren))
             cg.add(var.set_on_command(on))

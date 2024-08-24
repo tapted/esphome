@@ -3,6 +3,8 @@
 #include "esphome/components/esp32_ble_tracker/esp32_ble_tracker.h"
 #include "esphome/core/component.h"
 
+#include <vector>
+
 #ifdef USE_ESP32
 
 namespace esphome {
@@ -15,6 +17,7 @@ struct XiaomiParseResult {
     TYPE_HHCCPOT002,
     TYPE_LYWSDCGQ,
     TYPE_LYWSD02,
+    TYPE_LYWSD02MMC,
     TYPE_CGG1,
     TYPE_LYWSD03MMC,
     TYPE_CGD1,
